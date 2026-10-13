@@ -1,2 +1,2 @@
 # turbulence-simulation
-Simulating energy transfer of turbulent flows in 2D and 3D (APC 524 final project)
+Simulating turbulent flows in 2D and 3D and mapping out their energy transfer (APC 524 final project)
