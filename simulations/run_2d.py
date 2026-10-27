@@ -23,7 +23,7 @@ def main():
     dt = 0.005
     steps = 200
 
-    output = Path("results/figures")
+    output = Path(__file__).resolve().parent.parent / "results" / "figures"
     output.mkdir(parents=True, exist_ok=True)
 
     fig, axes = plt.subplots(
