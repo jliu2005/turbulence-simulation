@@ -1,40 +1,84 @@
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
+
 from src.ns2d import NavierStokes2D
 
 
+def initial_vorticity(solver):
+    """Same initial condition for all simulations."""
+    x, y = solver.X, solver.Y
+
+    return (
+        2 * np.sin(x) * np.sin(y)
+        + 0.6 * np.cos(3 * x + 2 * y)
+        + 0.4 * np.sin(2 * x - 3 * y)
+    )
+
+
 def main():
-    solver = NavierStokes2D(N=64, nu=0.01)
-    # Two-dimensional smooth vortical initial condition, not fully developed turbulence.
-    omega0 = (2 * np.sin(solver.X) * np.sin(solver.Y)
-              + 0.6 * np.cos(3 * solver.X + 2 * solver.Y)
-              + 0.4 * np.sin(2 * solver.X - 3 * solver.Y))
-    solver.set_initial_vorticity(omega0)
-    dt, steps = 0.005, 200
-    for n in range(steps):
-        solver.step(dt)
-        if (n + 1) % 50 == 0:
-            print(f't={(n+1)*dt:.3f}, kinetic energy={solver.kinetic_energy():.6f}')
-    u, v = solver.velocity()
-    speed = np.sqrt(u*u + v*v)
-    out = Path('results/figures')
-    out.mkdir(parents=True, exist_ok=True)
-    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), constrained_layout=True)
-    extent = (0, solver.L, 0, solver.L)
-    im1 = axes[0].imshow(speed.T, origin='lower', extent=extent)
-    axes[0].set_title('Velocity magnitude')
-    fig.colorbar(im1, ax=axes[0])
-    im2 = axes[1].imshow(solver.vorticity().T, origin='lower', extent=extent, cmap='RdBu_r')
-    axes[1].set_title('Vorticity')
-    fig.colorbar(im2, ax=axes[1])
-    for ax in axes:
-        ax.set(xlabel='x', ylabel='y')
-    path = out / 'ns2d_final.png'
-    fig.savefig(path, dpi=160)
-    print(f'Saved {path}')
+    viscosities = [0.05, 0.01, 0.005]
+
+    N = 64
+    dt = 0.005
+    steps = 200
+
+    output = Path("results/figures")
+    output.mkdir(parents=True, exist_ok=True)
+
+    fig, axes = plt.subplots(
+        2, 3, figsize=(13, 8), constrained_layout=True
+    )
+
+    for i, nu in enumerate(viscosities):
+        solver = NavierStokes2D(N=N, nu=nu)
+
+        solver.set_initial_vorticity(
+            initial_vorticity(solver)
+        )
+
+        for _ in range(steps):
+            solver.step(dt)
+
+        u, v = solver.velocity()
+        speed = np.sqrt(u**2 + v**2)
+        omega = solver.vorticity()
+
+        axes[0, i].imshow(
+            speed.T,
+            origin="lower",
+            extent=[0, solver.L, 0, solver.L],
+            vmin=0,
+            vmax=1.3
+        )
+        axes[0, i].set_title(f"Velocity, nu={nu}")
+
+        axes[1, i].imshow(
+            omega.T,
+            origin="lower",
+            extent=[0, solver.L, 0, solver.L],
+            cmap="RdBu_r",
+            vmin=-3,
+            vmax=3
+        )
+        axes[1, i].set_title(f"Vorticity, nu={nu}")
+
+        print(
+            f"nu={nu}, "
+            f"energy={solver.kinetic_energy():.6f}"
+        )
+
+    for ax in axes.flat:
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+
+    fig.savefig(
+        output / "viscosity_comparison.png",
+        dpi=160
+    )
+
     plt.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
