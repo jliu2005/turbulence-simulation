@@ -14,8 +14,7 @@ def test_velocity_recovery_and_incompressibility():
     u, v = s.velocity()
     np.testing.assert_allclose(u, np.sin(s.X) * np.cos(s.Y), atol=1e-12)
     np.testing.assert_allclose(v, -np.cos(s.X) * np.sin(s.Y), atol=1e-12)
-    div = np.fft.ifft2(1j * s.KX * np.fft.fft2(u)
-                         + 1j * s.KY * np.fft.fft2(v)).real
+    div = np.fft.ifft2(1j * s.KX * np.fft.fft2(u) + 1j * s.KY * np.fft.fft2(v)).real
     assert np.max(np.abs(div)) < 1e-12
 
 
@@ -45,4 +44,4 @@ def test_initial_shape_rejected():
     except ValueError:
         pass
     else:
-        raise AssertionError('Expected ValueError')
+        raise AssertionError("Expected ValueError")
