@@ -1,4 +1,5 @@
 import numpy as np
+
 from src.ns2d import NavierStokes2D
 
 
