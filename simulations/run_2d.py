@@ -1,6 +1,7 @@
 from pathlib import Path
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 from src.ns2d import NavierStokes2D
 
