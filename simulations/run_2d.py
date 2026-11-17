@@ -1,3 +1,4 @@
+
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -27,16 +28,12 @@ def main():
     output = Path(__file__).resolve().parent.parent / "results" / "figures"
     output.mkdir(parents=True, exist_ok=True)
 
-    fig, axes = plt.subplots(
-        2, 3, figsize=(13, 8), constrained_layout=True
-    )
+    fig, axes = plt.subplots(2, 3, figsize=(13, 8), constrained_layout=True)
 
     for i, nu in enumerate(viscosities):
         solver = NavierStokes2D(N=N, nu=nu)
 
-        solver.set_initial_vorticity(
-            initial_vorticity(solver)
-        )
+        solver.set_initial_vorticity(initial_vorticity(solver))
 
         for _ in range(steps):
             solver.step(dt)
@@ -46,11 +43,7 @@ def main():
         omega = solver.vorticity()
 
         axes[0, i].imshow(
-            speed.T,
-            origin="lower",
-            extent=[0, solver.L, 0, solver.L],
-            vmin=0,
-            vmax=1.3
+            speed.T, origin="lower", extent=[0, solver.L, 0, solver.L], vmin=0, vmax=1.3
         )
         axes[0, i].set_title(f"Velocity, nu={nu}")
 
@@ -60,23 +53,17 @@ def main():
             extent=[0, solver.L, 0, solver.L],
             cmap="RdBu_r",
             vmin=-3,
-            vmax=3
+            vmax=3,
         )
         axes[1, i].set_title(f"Vorticity, nu={nu}")
 
-        print(
-            f"nu={nu}, "
-            f"energy={solver.kinetic_energy():.6f}"
-        )
+        print(f"nu={nu}, energy={solver.kinetic_energy():.6f}")
 
     for ax in axes.flat:
         ax.set_xlabel("x")
         ax.set_ylabel("y")
 
-    fig.savefig(
-        output / "viscosity_comparison.png",
-        dpi=160
-    )
+    fig.savefig(output / "viscosity_comparison.png", dpi=160)
 
     plt.show()
 
