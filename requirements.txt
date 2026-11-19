@@ -14,3 +14,8 @@ matplotlib>=3.8
 # Registers the kernel used by the project notebook
 # (python -m ipykernel install --user --name=taylor-green ...).
 ipykernel>=6.29
+
+# The repository's CI (.github/workflows/ci.yml on the 2d-ns-solver branch)
+# installs only this file before running `python -m pytest -q`, so pytest is
+# listed here as well; requirements-dev.txt installs it too.
+pytest>=8.0
