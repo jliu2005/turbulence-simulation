@@ -218,3 +218,31 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# Python virtual environments
+.venv/
+venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# Large simulation outputs: regenerate with the notebook instead of committing.
+# taylor_green_dns.npz is ~118 MB, which also exceeds GitHub's 100 MB hard limit.
+*.npz
+*.npy
+*.h5
+*.hdf5
+*.nc
+data/
+
+# Local scratch / generated artifacts
+*.ipynb.bak
+tmp/
