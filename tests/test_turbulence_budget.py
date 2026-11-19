@@ -24,21 +24,23 @@ import pytest  # noqa: E402
 
 from postprocessing import plot_turbulence_budget  # noqa: E402
 
-
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
 # ---------------------------------------------------------------------------
+
 
 def taylor_green_ic(N, domain_length=2 * np.pi):
     """Analytic Taylor-Green vortex, shape (3, N, N, N). Divergence-free."""
     x = np.arange(N) * domain_length / N
     X, Y, Z = np.meshgrid(x, x, x, indexing="ij")
 
-    return np.array([
-        np.sin(X) * np.cos(Y) * np.cos(Z),
-        -np.cos(X) * np.sin(Y) * np.cos(Z),
-        np.zeros_like(X),
-    ])
+    return np.array(
+        [
+            np.sin(X) * np.cos(Y) * np.cos(Z),
+            -np.cos(X) * np.sin(Y) * np.cos(Z),
+            np.zeros_like(X),
+        ]
+    )
 
 
 def run_mini_dns(N=16, nu=1 / 50, t_end=5.0, dt=0.05, snap_every=5):
@@ -66,11 +68,7 @@ def run_mini_dns(N=16, nu=1 / 50, t_end=5.0, dt=0.05, snap_every=5):
     K2inv[K2 > 0] = 1.0 / K2[K2 > 0]
 
     kcut = N // 3
-    mask = (
-        (np.abs(KX) <= kcut) &
-        (np.abs(KY) <= kcut) &
-        (np.abs(KZ) <= kcut)
-    )
+    mask = (np.abs(KX) <= kcut) & (np.abs(KY) <= kcut) & (np.abs(KZ) <= kcut)
 
     def fft3(f):
         return sfft.rfftn(f, axes=(-3, -2, -1))
@@ -79,20 +77,24 @@ def run_mini_dns(N=16, nu=1 / 50, t_end=5.0, dt=0.05, snap_every=5):
         return sfft.irfftn(fh, s=(N, N, N), axes=(-3, -2, -1))
 
     def curl_hat(uh):
-        return 1j * np.array([
-            KY * uh[2] - KZ * uh[1],
-            KZ * uh[0] - KX * uh[2],
-            KX * uh[1] - KY * uh[0],
-        ])
+        return 1j * np.array(
+            [
+                KY * uh[2] - KZ * uh[1],
+                KZ * uh[0] - KX * uh[2],
+                KX * uh[1] - KY * uh[0],
+            ]
+        )
 
     def rhs(uh):
         u = ifft3(uh)
         w = ifft3(curl_hat(uh))
-        cross = np.array([
-            u[1] * w[2] - u[2] * w[1],
-            u[2] * w[0] - u[0] * w[2],
-            u[0] * w[1] - u[1] * w[0],
-        ])
+        cross = np.array(
+            [
+                u[1] * w[2] - u[2] * w[1],
+                u[2] * w[0] - u[0] * w[2],
+                u[0] * w[1] - u[1] * w[0],
+            ]
+        )
         nh = fft3(cross) * mask
         nh -= Kvec * (np.sum(Kvec * nh, axis=0) * K2inv)
         return nh - nu * K2 * uh
@@ -146,6 +148,7 @@ def frozen_field():
 # 1. API contract
 # ---------------------------------------------------------------------------
 
+
 def test_returns_documented_keys(frozen_field):
     velocity, times = frozen_field
 
@@ -154,8 +157,14 @@ def test_returns_documented_keys(frozen_field):
     )
 
     expected = {
-        "times", "KE", "production", "transport_mean", "transport_rms",
-        "dissipation", "cumulative_dissipation", "energy_budget_residual",
+        "times",
+        "KE",
+        "production",
+        "transport_mean",
+        "transport_rms",
+        "dissipation",
+        "cumulative_dissipation",
+        "energy_budget_residual",
         "figures",
     }
     assert set(results) == expected
@@ -184,6 +193,7 @@ def test_arrays_are_finite(frozen_field):
 # ---------------------------------------------------------------------------
 # 2. Identities that must hold for any periodic input
 # ---------------------------------------------------------------------------
+
 
 def test_viscosity_zero_gives_zero_dissipation_and_closure(frozen_field):
     velocity, times = frozen_field
@@ -268,6 +278,7 @@ def test_dealiasing_removes_energy_near_the_cutoff():
 # 3. Physics of a short DNS run
 # ---------------------------------------------------------------------------
 
+
 def test_short_dns_run_closes_the_energy_budget():
     velocity, times = run_mini_dns()
 
@@ -295,14 +306,12 @@ def test_component_axis_last_gives_same_answer():
     velocity, times = run_mini_dns(N=16, t_end=2.0)
 
     axis_first, _, _ = plot_turbulence_budget(
-        velocity=velocity, nu=1 / 50, times=times,
-        component_axis=1, show=False
+        velocity=velocity, nu=1 / 50, times=times, component_axis=1, show=False
     )
 
     velocity_last = np.moveaxis(velocity, 1, -1)
     axis_last, _, _ = plot_turbulence_budget(
-        velocity=velocity_last, nu=1 / 50, times=times,
-        component_axis=-1, show=False
+        velocity=velocity_last, nu=1 / 50, times=times, component_axis=-1, show=False
     )
 
     for key in ("KE", "dissipation", "transport_rms", "cumulative_dissipation"):
@@ -331,6 +340,7 @@ def test_dt_and_explicit_times_agree():
 # ---------------------------------------------------------------------------
 # 4. Input validation
 # ---------------------------------------------------------------------------
+
 
 def test_rejects_wrong_number_of_dimensions():
     with pytest.raises(ValueError, match="5D array"):
@@ -386,14 +396,13 @@ def test_rejects_non_positive_domain_length():
 # 5. Figure handling
 # ---------------------------------------------------------------------------
 
+
 def test_show_false_creates_figures_without_displaying(frozen_field, monkeypatch):
     """show=False must be respected (it previously was not: plt.show() ran twice)."""
     import matplotlib.pyplot as plt
 
     called = []
-    monkeypatch.setattr(
-        plt, "show", lambda *a, **k: called.append(True), raising=True
-    )
+    monkeypatch.setattr(plt, "show", lambda *a, **k: called.append(True), raising=True)
 
     velocity, times = frozen_field
     plot_turbulence_budget(velocity=velocity, nu=1e-3, times=times, show=False)
@@ -421,15 +430,11 @@ def test_save_prefix_writes_all_figures(frozen_field, tmp_path):
 def test_single_snapshot_does_not_crash():
     u0 = taylor_green_ic(16)[np.newaxis, ...]
 
-    results, _, _ = plot_turbulence_budget(
-        velocity=u0, nu=1e-3, dt=0.5, show=False
-    )
+    results, _, _ = plot_turbulence_budget(velocity=u0, nu=1e-3, dt=0.5, show=False)
 
     assert results["KE"].shape == (1,)
     np.testing.assert_array_equal(results["cumulative_dissipation"], [0.0])
-    np.testing.assert_allclose(
-        results["energy_budget_residual"], [0.0], atol=1e-15
-    )
+    np.testing.assert_allclose(results["energy_budget_residual"], [0.0], atol=1e-15)
 
 
 def test_no_figures_left_open():

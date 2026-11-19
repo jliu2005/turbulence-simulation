@@ -27,9 +27,9 @@ Dependencies
 numpy, scipy, matplotlib (see ``requirements.txt``).
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy.fft as sfft
-import matplotlib.pyplot as plt
 
 __all__ = ["plot_turbulence_budget"]
 
@@ -39,11 +39,11 @@ def plot_turbulence_budget(
     nu,
     dt=None,
     times=None,
-    domain_lengths=(2*np.pi, 2*np.pi, 2*np.pi),
+    domain_lengths=(2 * np.pi, 2 * np.pi, 2 * np.pi),
     component_axis=1,
     dealias=True,
     show=True,
-    save_prefix=None
+    save_prefix=None,
 ):
     """
     Calculate and plot the time evolution of the kinetic energy budget
@@ -160,8 +160,7 @@ def plot_turbulence_budget(
 
     if velocity.ndim != 5:
         raise ValueError(
-            "velocity must be a 5D array: "
-            "(nt, 3, nx, ny, nz) or (nt, nx, ny, nz, 3)."
+            "velocity must be a 5D array: (nt, 3, nx, ny, nz) or (nt, nx, ny, nz, 3)."
         )
 
     velocity = np.moveaxis(velocity, component_axis, 1)
@@ -178,14 +177,12 @@ def plot_turbulence_budget(
         raise ValueError("Kinematic viscosity cannot be negative.")
 
     if times is None:
-
         if dt is None or dt <= 0:
             raise ValueError("Provide a positive dt or an array of times.")
 
         times = np.arange(nt) * dt
 
     else:
-
         times = np.asarray(times, dtype=float)
 
         if times.shape != (nt,):
@@ -209,14 +206,11 @@ def plot_turbulence_budget(
     # 2. FOURIER GRID
     # --------------------------------------------------------
 
-    kx = 2 * np.pi * np.fft.fftfreq(nx, d=Lx/nx)
-    ky = 2 * np.pi * np.fft.fftfreq(ny, d=Ly/ny)
-    kz = 2 * np.pi * np.fft.rfftfreq(nz, d=Lz/nz)
+    kx = 2 * np.pi * np.fft.fftfreq(nx, d=Lx / nx)
+    ky = 2 * np.pi * np.fft.fftfreq(ny, d=Ly / ny)
+    kz = 2 * np.pi * np.fft.rfftfreq(nz, d=Lz / nz)
 
-    KX, KY, KZ = np.meshgrid(
-        kx, ky, kz,
-        indexing="ij"
-    )
+    KX, KY, KZ = np.meshgrid(kx, ky, kz, indexing="ij")
 
     K2 = KX**2 + KY**2 + KZ**2
 
@@ -224,14 +218,11 @@ def plot_turbulence_budget(
 
     K2inv[K2 > 0] = 1.0 / K2[K2 > 0]
 
-    Kvec = np.array([KX, KY, KZ])
-
     # --------------------------------------------------------
     # 3. DEALIASING MASK
     # --------------------------------------------------------
 
     if dealias:
-
         ix = np.fft.fftfreq(nx) * nx
         iy = np.fft.fftfreq(ny) * ny
         iz = np.fft.rfftfreq(nz) * nz
@@ -240,19 +231,11 @@ def plot_turbulence_budget(
         kcut_y = ny // 3
         kcut_z = nz // 3
 
-        IX, IY, IZ = np.meshgrid(
-            ix, iy, iz,
-            indexing="ij"
-        )
+        IX, IY, IZ = np.meshgrid(ix, iy, iz, indexing="ij")
 
-        mask = (
-            (np.abs(IX) <= kcut_x) &
-            (np.abs(IY) <= kcut_y) &
-            (IZ <= kcut_z)
-        )
+        mask = (np.abs(IX) <= kcut_x) & (np.abs(IY) <= kcut_y) & (IZ <= kcut_z)
 
     else:
-
         mask = np.ones_like(K2, dtype=bool)
 
     # --------------------------------------------------------
@@ -260,17 +243,10 @@ def plot_turbulence_budget(
     # --------------------------------------------------------
 
     def fft3(f):
-        return sfft.rfftn(
-            f,
-            axes=(-3, -2, -1)
-        )
+        return sfft.rfftn(f, axes=(-3, -2, -1))
 
     def ifft3(fh):
-        return sfft.irfftn(
-            fh,
-            s=(nx, ny, nz),
-            axes=(-3, -2, -1)
-        )
+        return sfft.irfftn(fh, s=(nx, ny, nz), axes=(-3, -2, -1))
 
     # --------------------------------------------------------
     # 5. STORAGE
@@ -287,7 +263,6 @@ def plot_turbulence_budget(
     # --------------------------------------------------------
 
     for n in range(nt):
-
         # Physical-space velocity
         u = velocity[n]
 
@@ -323,26 +298,19 @@ def plot_turbulence_budget(
 
         for i in range(3):
             for j, Kj in enumerate(wave_numbers):
-
-                grad[i, j] = ifft3(
-                    1j * Kj * uh[i]
-                )
+                grad[i, j] = ifft3(1j * Kj * uh[i])
 
         # ----------------------------------------------------
         # STRAIN-RATE TENSOR
         # ----------------------------------------------------
 
-        S = 0.5 * (
-            grad + np.swapaxes(grad, 0, 1)
-        )
+        S = 0.5 * (grad + np.swapaxes(grad, 0, 1))
 
         # ----------------------------------------------------
         # DISSIPATION
         # ----------------------------------------------------
 
-        epsilon_local = (
-            2 * nu * np.sum(S**2, axis=(0, 1))
-        )
+        epsilon_local = 2 * nu * np.sum(S**2, axis=(0, 1))
 
         dissipation_history[n] = np.mean(epsilon_local)
 
@@ -354,16 +322,11 @@ def plot_turbulence_budget(
 
         for i in range(3):
             for j in range(3):
-
-                pressure_source -= (
-                    grad[i, j] * grad[j, i]
-                )
+                pressure_source -= grad[i, j] * grad[j, i]
 
         pressure_source_hat = fft3(pressure_source) * mask
 
-        pressure_hat = (
-            -pressure_source_hat * K2inv
-        )
+        pressure_hat = -pressure_source_hat * K2inv
 
         pressure = ifft3(pressure_hat)
 
@@ -375,30 +338,17 @@ def plot_turbulence_budget(
 
         flux_hat = fft3(energy_flux) * mask
 
-        divergence_hat = 1j * (
-            KX * flux_hat[0] +
-            KY * flux_hat[1] +
-            KZ * flux_hat[2]
-        )
+        divergence_hat = 1j * (KX * flux_hat[0] + KY * flux_hat[1] + KZ * flux_hat[2])
 
         K_hat = fft3(K) * mask
 
-        laplacian_K = ifft3(
-            -K2 * K_hat
-        )
+        laplacian_K = ifft3(-K2 * K_hat)
 
-        transport_local = (
-            -ifft3(divergence_hat)
-            + nu * laplacian_K
-        )
+        transport_local = -ifft3(divergence_hat) + nu * laplacian_K
 
-        transport_mean_history[n] = np.mean(
-            transport_local
-        )
+        transport_mean_history[n] = np.mean(transport_local)
 
-        transport_rms_history[n] = np.sqrt(
-            np.mean(transport_local**2)
-        )
+        transport_rms_history[n] = np.sqrt(np.mean(transport_local**2))
 
     # --------------------------------------------------------
     # 7. CUMULATIVE DISSIPATION
@@ -407,23 +357,15 @@ def plot_turbulence_budget(
     cumulative_dissipation = np.zeros(nt)
 
     if nt > 1:
-
         cumulative_dissipation[1:] = np.cumsum(
-            0.5 * (
-                dissipation_history[1:] +
-                dissipation_history[:-1]
-            ) * np.diff(times)
+            0.5 * (dissipation_history[1:] + dissipation_history[:-1]) * np.diff(times)
         )
 
     # --------------------------------------------------------
     # 8. ENERGY BUDGET CLOSURE
     # --------------------------------------------------------
 
-    energy_budget_residual = (
-        KE_history
-        + cumulative_dissipation
-        - KE_history[0]
-    )
+    energy_budget_residual = KE_history + cumulative_dissipation - KE_history[0]
 
     # --------------------------------------------------------
     # 9. PACKAGE RESULTS
@@ -437,7 +379,7 @@ def plot_turbulence_budget(
         "transport_rms": transport_rms_history,
         "dissipation": dissipation_history,
         "cumulative_dissipation": cumulative_dissipation,
-        "energy_budget_residual": energy_budget_residual
+        "energy_budget_residual": energy_budget_residual,
     }
 
     # --------------------------------------------------------
@@ -450,23 +392,15 @@ def plot_turbulence_budget(
     production_scale = max(
         float(np.max(np.abs(dissipation_history))),
         float(np.max(np.abs(transport_rms_history))),
-        1e-30
+        1e-30,
     )
 
-    fig, axes = plt.subplots(
-        2, 2,
-        figsize=(14, 9),
-        layout="constrained"
-    )
+    fig, axes = plt.subplots(2, 2, figsize=(14, 9), layout="constrained")
 
     # Production
     ax = axes[0, 0]
 
-    ax.plot(
-        times,
-        production_history,
-        linewidth=2
-    )
+    ax.plot(times, production_history, linewidth=2)
 
     ax.axhline(0, color="black", linewidth=0.8)
 
@@ -476,31 +410,27 @@ def plot_turbulence_budget(
     ax.set_xlabel("Time [s]")
     ax.set_ylabel("Production [m²/s³]")
     ax.text(
-        0.03, 0.90,
+        0.03,
+        0.90,
         "Zero by construction:\nno mean shear in this\nperiodic configuration",
         transform=ax.transAxes,
         va="top",
         fontsize=9,
-        color="black"
+        color="black",
     )
     ax.grid(alpha=0.3)
 
     # Transport
     ax = axes[0, 1]
 
-    ax.plot(
-        times,
-        transport_rms_history,
-        linewidth=2,
-        label="RMS local transport"
-    )
+    ax.plot(times, transport_rms_history, linewidth=2, label="RMS local transport")
 
     ax.plot(
         times,
         transport_mean_history,
         "--",
         linewidth=1.5,
-        label="Mean signed transport"
+        label="Mean signed transport",
     )
 
     ax.axhline(0, color="black", linewidth=0.8)
@@ -514,11 +444,7 @@ def plot_turbulence_budget(
     # Dissipation
     ax = axes[1, 0]
 
-    ax.plot(
-        times,
-        dissipation_history,
-        linewidth=2
-    )
+    ax.plot(times, dissipation_history, linewidth=2)
 
     ax.set_title("Viscous Dissipation")
     ax.set_xlabel("Time [s]")
@@ -528,34 +454,19 @@ def plot_turbulence_budget(
     # Global energy budget
     ax = axes[1, 1]
 
-    ax.plot(
-        times,
-        KE_history,
-        linewidth=2,
-        label="Kinetic energy"
-    )
+    ax.plot(times, KE_history, linewidth=2, label="Kinetic energy")
 
-    ax.plot(
-        times,
-        cumulative_dissipation,
-        linewidth=2,
-        label="Cumulative dissipation"
-    )
+    ax.plot(times, cumulative_dissipation, linewidth=2, label="Cumulative dissipation")
 
     ax.plot(
         times,
         KE_history + cumulative_dissipation,
         "--",
         linewidth=1.5,
-        label="KE + cumulative dissipation"
+        label="KE + cumulative dissipation",
     )
 
-    ax.axhline(
-        KE_history[0],
-        color="black",
-        linestyle=":",
-        label="Initial KE"
-    )
+    ax.axhline(KE_history[0], color="black", linestyle=":", label="Initial KE")
 
     ax.set_title("Global Energy Budget")
     ax.set_xlabel("Time [s]")
@@ -563,27 +474,14 @@ def plot_turbulence_budget(
     ax.legend()
     ax.grid(alpha=0.3)
 
-    fig.suptitle(
-        f"Turbulence Budget | Grid: {nx} × {ny} × {nz}",
-        fontsize=15
-    )
+    fig.suptitle(f"Turbulence Budget | Grid: {nx} × {ny} × {nz}", fontsize=15)
 
     # Energy closure diagnostic
-    fig_residual, ax_residual = plt.subplots(
-        figsize=(9, 4)
-    )
+    fig_residual, ax_residual = plt.subplots(figsize=(9, 4))
 
-    ax_residual.plot(
-        times,
-        energy_budget_residual,
-        linewidth=2
-    )
+    ax_residual.plot(times, energy_budget_residual, linewidth=2)
 
-    ax_residual.axhline(
-        0,
-        color="black",
-        linestyle="--"
-    )
+    ax_residual.axhline(0, color="black", linestyle="--")
 
     ax_residual.set_title("Energy Budget Closure Error")
     ax_residual.set_xlabel("Time [s]")
@@ -598,40 +496,19 @@ def plot_turbulence_budget(
 
     fig_combined, ax_combined = plt.subplots(figsize=(10, 6))
 
-    ax_combined.plot(
-        times,
-        production_history,
-        label="Production",
-        linewidth=2
-    )
+    ax_combined.plot(times, production_history, label="Production", linewidth=2)
 
     ax_combined.plot(
-        times,
-        transport_rms_history,
-        label="RMS local transport",
-        linewidth=2
+        times, transport_rms_history, label="RMS local transport", linewidth=2
     )
 
-    ax_combined.plot(
-        times,
-        dissipation_history,
-        label="Dissipation",
-        linewidth=2
-    )
+    ax_combined.plot(times, dissipation_history, label="Dissipation", linewidth=2)
 
-    ax_combined.axhline(
-        0,
-        color="black",
-        linestyle="--",
-        linewidth=1,
-        alpha=0.6
-    )
+    ax_combined.axhline(0, color="black", linestyle="--", linewidth=1, alpha=0.6)
 
     ax_combined.set_xlabel("Time [s]")
     ax_combined.set_ylabel("Budget term magnitude [m²/s³]")
-    ax_combined.set_title(
-        "Production, RMS Transport, and Dissipation"
-    )
+    ax_combined.set_title("Production, RMS Transport, and Dissipation")
 
     ax_combined.legend()
     ax_combined.grid(alpha=0.3)
@@ -642,16 +519,11 @@ def plot_turbulence_budget(
     # 11. SAVE / DISPLAY
     # --------------------------------------------------------
 
-    figures = {
-        "budget": fig,
-        "closure": fig_residual,
-        "terms": fig_combined
-    }
+    figures = {"budget": fig, "closure": fig_residual, "terms": fig_combined}
 
     results["figures"] = figures
 
     if save_prefix is not None:
-
         for name, figure in figures.items():
             figure.savefig(f"{save_prefix}{name}.png", dpi=150)
 
