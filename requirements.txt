@@ -1,0 +1,16 @@
+# Direct dependencies of the postprocessing module and the DNS notebook.
+#
+# These are version *floors*, not exact pins, so the project installs cleanly
+# across the different Python versions in use on the team. Install with:
+#
+#     python -m pip install -r requirements.txt
+#
+# For the optional notebook/dev tooling use requirements-dev.txt, and see
+# requirements-lock.txt for the exact environment used to produce figures/.
+numpy>=1.26
+scipy>=1.11
+matplotlib>=3.8
+
+# Registers the kernel used by the project notebook
+# (python -m ipykernel install --user --name=taylor-green ...).
+ipykernel>=6.29
