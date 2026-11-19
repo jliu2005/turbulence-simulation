@@ -28,7 +28,7 @@ This repository contains a three-dimensional Taylor-Green vortex Direct Numerica
 | `Turb_Dissipation_simulation.ipynb` | Example notebook: runs the DNS, then calls the module. Self-contained - it generates its own data. |
 | `figures/` | Example output images (regenerate with the notebook, see below). |
 | `tests/test_turbulence_budget.py` | Pytest suite: input validation, exact periodic identities, and a short DNS closure check. |
-| `requirements.txt` | Direct runtime dependencies (version floors). |
+| `requirements.txt` | Direct dependencies (floors, not pins); includes pytest so the test suite installs with them. |
 | `requirements-dev.txt` | Optional tooling: Jupyter, pytest, pre-commit hooks. |
 | `requirements-lock.txt` | Exact `pip freeze` of the environment used to produce `figures/`. Provenance only - do not install this for normal use. |
 | `conftest.py` | Makes `import postprocessing` work in tests without an install step. |
