@@ -32,8 +32,7 @@ repos:
           - --extra-key
           - metadata.tags
 
-exclude: |
-  (?x)^(
-      figures/.*|
-      requirements-lock\.txt
-  )$
+# Keep the recorded pip freeze byte-for-byte identical to the environment it
+# describes. Text hooks already skip binary files such as figures/*.png, so no
+# exclusion is needed for those - importantly, they stay size-checked.
+exclude: ^requirements-lock\.txt$
