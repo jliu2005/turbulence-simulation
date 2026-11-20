@@ -1,3 +1,6 @@
+numpy
+matplotlib
+pytest
 # Direct dependencies of the postprocessing module and the DNS notebook.
 #
 # These are version *floors*, not exact pins, so the project installs cleanly

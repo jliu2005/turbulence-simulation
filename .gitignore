@@ -219,6 +219,13 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Simulation temporary data
+results/data/
 
 # Python virtual environments
 .venv/
