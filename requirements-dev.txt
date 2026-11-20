@@ -1,0 +1,22 @@
+# Development-only tooling. Not needed to run the simulation or the
+# postprocessing module.
+#
+#     python -m pip install -r requirements-dev.txt
+#     pre-commit install
+-r requirements.txt
+
+# Interactive notebook use
+jupyter>=1.0
+jupyterlab>=4.0
+notebook>=7.0
+
+# Tests
+pytest>=8.0
+
+# Repository hygiene hooks (see .pre-commit-config.yaml):
+#   - nbstripout: keeps committed notebooks free of embedded outputs, which is
+#     what stopped this project's demo notebook from growing to ~27 MB
+#   - check-added-large-files: blocks files over the configured limit, so a
+#     100 MB+ simulation dump can never be committed by accident
+pre-commit>=3.6
+nbstripout>=0.7
