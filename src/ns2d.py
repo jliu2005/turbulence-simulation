@@ -27,6 +27,41 @@ class NavierStokes2D:
         self.omega_hat = np.zeros((N, N), dtype=complex)
 
     def set_initial_vorticity(self, omega):
+        """
+        Set the initial vorticity field of the solver.
+
+        Transform the physical-space vorticity field into Fourier
+        space, apply the 2/3 dealiasing rule, and remove the
+        zero-wavenumber mode.
+
+        Parameters
+        ----------
+        omega : array_like
+            Initial vorticity field in physical space.
+            Must have shape (N, N), where N is the number
+            of grid points in each spatial direction.
+
+        Returns
+        -------
+        None
+            Updates the internal Fourier-space vorticity field.
+
+        Raises
+        ------
+        ValueError
+            If omega has an incorrect shape or contains values
+            that cannot be converted to floats.
+        TypeError
+            If omega cannot be converted to a floating-point array.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from src.ns2d import NavierStokes2D
+        >>> solver = NavierStokes2D(N=32)
+        >>> omega = 2 * np.sin(solver.X) * np.sin(solver.Y)
+        >>> solver.set_initial_vorticity(omega)
+        """
         omega = np.asarray(omega, dtype=float)
         if omega.shape != (self.N, self.N):
             raise ValueError("Initial vorticity must have shape (N, N)")
@@ -47,6 +82,54 @@ class NavierStokes2D:
         return np.fft.ifft2(self.omega_hat).real
 
     def rhs(self, omega_hat):
+        """
+        Compute the right-hand side of the vorticity equation.
+
+        Evaluate the nonlinear advection and viscous diffusion
+        terms of the two-dimensional incompressible Navier-Stokes
+        equations in Fourier space. Apply the 2/3 dealiasing rule
+        to remove unresolved high-wavenumber modes.
+
+        Parameters
+        ----------
+        omega_hat : numpy.ndarray
+            Complex Fourier coefficients of the vorticity field.
+            Must have shape (N, N), where N is the number of
+            grid points in each spatial direction.
+
+        Returns
+        -------
+        numpy.ndarray
+            Complex Fourier coefficients of the time derivative
+            of vorticity, with shape (N, N).
+
+        Raises
+        ------
+        ValueError
+            If the input shape is incompatible with the solver's
+            spectral arrays or Fourier transform operations.
+        TypeError
+            If the input does not support the required numerical
+            operations.
+
+        Notes
+        -----
+        The nonlinear advection term is evaluated in physical
+        space and transformed back into Fourier space.
+        The viscous diffusion term is evaluated directly in
+        Fourier space.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from src.ns2d import NavierStokes2D
+        >>> solver = NavierStokes2D(N=32, nu=0.01)
+        >>> omega = 2 * np.sin(solver.X) * np.sin(solver.Y)
+        >>> solver.set_initial_vorticity(omega)
+        >>> domega_hat = solver.rhs(solver.omega_hat)
+        >>> domega_hat.shape
+        (32, 32)
+        """
         u, v = self.velocity_from_hat(omega_hat)
         wx = np.fft.ifft2(1j * self.KX * omega_hat).real
         wy = np.fft.ifft2(1j * self.KY * omega_hat).real
@@ -54,6 +137,41 @@ class NavierStokes2D:
         return (-nonlinear_hat - self.nu * self.K2 * omega_hat) * self.mask
 
     def step(self, dt):
+        """
+        Advance the vorticity field by one time step.
+
+        Integrate the Fourier-space vorticity equation using
+        the classical fourth-order Runge-Kutta (RK4) method.
+        Apply the dealiasing mask and remove the zero mode
+        after the update.
+
+        Parameters
+        ----------
+        dt : float
+            Positive time step size. The caller must choose
+            a sufficiently small value for numerical stability.
+
+        Returns
+        -------
+        None
+            Updates the internal Fourier-space vorticity field.
+
+        Raises
+        ------
+        ValueError
+            If dt is less than or equal to zero.
+        TypeError
+            If dt is not a compatible numeric value.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from src.ns2d import NavierStokes2D
+        >>> solver = NavierStokes2D(N=32, nu=0.01)
+        >>> omega = 2 * np.sin(solver.X) * np.sin(solver.Y)
+        >>> solver.set_initial_vorticity(omega)
+        >>> solver.step(0.001)
+        """
         if dt <= 0:
             raise ValueError("dt must be positive")
         w = self.omega_hat
