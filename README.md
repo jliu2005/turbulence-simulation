@@ -2,7 +2,15 @@
 
 Simulating turbulent flows in 2D and 3D and mapping out their energy transfer (APC 524 final project).
 
-This repository contains a three-dimensional Taylor-Green vortex Direct Numerical Simulation (DNS) on a pseudo-spectral method, plus a `postprocessing` package that reduces a saved velocity field `u(x, y, z, t)` into the **resolved kinetic-energy budget**: production, transport and dissipation, with a global energy-closure diagnostic.
+This project investigates incompressible flows using numerical simulations of the Navier-Stokes equations and analyzes their kinetic energy, energy spectra, energy transfer, and viscous dissipation.
+
+The repository includes:
+
+- A two-dimensional Navier-Stokes solver using the vorticity-streamfunction formulation.
+- A three-dimensional Taylor-Green vortex simulation using a pseudo-spectral method.
+- Postprocessing tools for kinetic-energy budget analysis, energy spectra, and spectral energy flux.
+- Automated testing, code quality checks, and Sphinx documentation.
+
 
 ## Contents
 
@@ -16,8 +24,12 @@ This repository contains a three-dimensional Taylor-Green vortex Direct Numerica
 - [Running the tests](#running-the-tests)
 - [Numerical assumptions and limitations](#numerical-assumptions-and-limitations)
 - [Physical model](#physical-model)
+- [Continuous integration and code quality](#continuous-integration-and-code-quality)
+- [Documentation](#documentation)
 - [Contributing](#contributing)
 - [License](#license)
+
+
 
 ## Repository layout
 
@@ -33,6 +45,14 @@ This repository contains a three-dimensional Taylor-Green vortex Direct Numerica
 | `requirements-lock.txt` | Exact `pip freeze` of the environment used to produce `figures/`. Provenance only - do not install this for normal use. |
 | `conftest.py` | Makes `import postprocessing` work in tests without an install step. |
 | `.pre-commit-config.yaml` | Hooks that strip notebook outputs and refuse oversized files. |
+| `src/ns2d.py` | Two-dimensional incompressible Navier-Stokes solver. |
+| `simulations/run_2d.py` | Example simulation comparing different viscosities. |
+| `tests/test_ns2d.py` | Unit tests for the 2D solver. |
+| `results/` | Simulation results and visualization figures. |
+| `docs/` | Sphinx documentation source files. |
+| `.github/workflows/` | Automated testing and documentation build workflows. |
+| `pyproject.toml` | Configuration for pytest and Ruff. |
+
 
 ## Environment setup
 
@@ -102,6 +122,24 @@ python -m pytest -q
 The virtual environment and all simulation output files are excluded from version control. Dependencies are documented in `requirements.txt` and installed locally by each contributor.
 
 ## Quickstart
+
+### 2D Navier-Stokes simulation
+
+Run the following command from the repository root:
+
+```bash
+python -m simulations.run_2d
+```
+
+The simulation compares velocity and vorticity fields at three different kinematic viscosities:
+
+- 0.05
+- 0.01
+- 0.005
+
+The resulting figure is saved in `results/figures/viscosity_comparison.png`.
+
+### 3D simulation and energy-budget analysis
 
 The notebook does all of this, but the analysis is a regular Python function and can be used from any script:
 
@@ -268,6 +306,15 @@ python -m pytest -q
 
 The suite covers input validation, identities that hold exactly on a periodic domain (zero mean transport, zero viscosity implies zero dissipation), the `component_axis` and `dt`/`times` code paths, figure handling, and the energy closure of a short `N = 16` DNS run. It uses small grids so the whole thing runs in a few seconds.
 
+The 2D Navier-Stokes solver is tested for:
+
+- Velocity recovery from vorticity.
+- Incompressibility of the velocity field.
+- Agreement with the analytical Taylor-Green vortex decay.
+- Kinetic energy decay in unforced viscous flow.
+- Rejection of invalid initial-condition shapes.
+
+
 ## Numerical assumptions and limitations
 
 Read these before reusing the numbers in a write-up.
@@ -281,6 +328,41 @@ Read these before reusing the numbers in a write-up.
 - **Units.** The simulation is nondimensional (spectral-code units with $L = 2\pi$ and $\nu = 1/400$). Axis labels carry m²/s² and m²/s³ for readability; drop them when comparing against nondimensional literature values.
 
 ## Physical model
+
+### Two-dimensional Navier-Stokes solver
+
+The 2D solver uses the vorticity-streamfunction formulation of the incompressible Navier-Stokes equations on a periodic square domain.
+
+The governing equations are:
+
+$$
+\frac{\partial \omega}{\partial t}
++ \mathbf{u}\cdot\nabla\omega
+= \nu\nabla^2\omega
+$$
+
+$$
+\nabla^2\psi=-\omega
+$$
+
+The velocity components are recovered from the streamfunction:
+
+$$
+u=\frac{\partial\psi}{\partial y},
+\qquad
+v=-\frac{\partial\psi}{\partial x}
+$$
+
+Numerical methods:
+
+- Fourier pseudo-spectral spatial discretization.
+- Fourth-order Runge-Kutta time integration (RK4).
+- 2/3-rule dealiasing.
+- Periodic boundary conditions.
+- Zero mean velocity and no external forcing.
+
+### Three-dimensional Taylor-Green vortex simulation
+
 
 This project implements a three-dimensional Taylor-Green vortex simulation using a pseudo-spectral Direct Numerical Simulation (DNS) approach.
 
@@ -296,7 +378,7 @@ The simulation includes:
 - Production, transport, and dissipation diagnostics (with the production caveat noted above).
 - Time-dependent visualization of turbulence development.
 
-### Governing equations
+#### Governing equations
 
 Continuity equation:
 
@@ -312,7 +394,7 @@ $$
 
 where $\mathbf{u}$ is the velocity vector, $p$ the pressure, $\rho$ the density and $\nu$ the kinematic viscosity. The flow is incompressible with constant density.
 
-### Initial condition
+#### Initial condition
 
 The classical Taylor-Green vortex:
 
@@ -326,7 +408,7 @@ $$
 KE_0 = 0.125
 $$
 
-### Computational domain
+#### Computational domain
 
 - Domain dimensions: $2\pi \times 2\pi \times 2\pi$
 - Boundary conditions: periodic in all three directions
@@ -334,6 +416,37 @@ $$
 - Default resolution: $N = 32$ in the notebook's `quick` preset and $N = 64$ in the `full` preset and in `figures/`; `nu = 1/400` (Re $= 400$) with $\Delta t = 0.02$
 - Time integration: Heun (RK2), explicit, with the nonlinear term in velocity-vorticity form and pressure projection in Fourier space
 - Dealiasing: 2/3 rule
+
+## Continuous integration and code quality
+
+GitHub Actions automatically performs:
+
+- Linting checks using Ruff.
+- Formatting checks using Ruff.
+- Unit tests using pytest.
+- Documentation builds using Sphinx.
+
+To run code quality checks locally:
+
+```bash
+python -m pip install ruff
+ruff check .
+ruff format --check .
+```
+
+To automatically format Python files:
+
+```bash
+ruff format .
+```
+
+## Documentation
+
+The project uses Sphinx to generate documentation from source files and Python docstrings.
+
+Documentation source files are located in `docs/`.
+
+The generated HTML documentation is available as an artifact from the Build Documentation workflow in GitHub Actions.
 
 ## Contributing
 
