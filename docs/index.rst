@@ -1,11 +1,13 @@
 Turbulence Simulation
 =====================
 
-A numerical solver for the two-dimensional
-incompressible Navier-Stokes equations.
+Simulating turbulent flows and mapping out their energy transfer
 
 API Documentation
 -----------------
+
+2D Navier-Stokes Solver
+~~~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: src.ns2d
    :members:
