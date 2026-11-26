@@ -142,6 +142,33 @@ The simulation compares velocity and vorticity fields at three different kinemat
 
 The resulting figure is saved in `results/figures/viscosity_comparison.png`.
 
+### 2D flow with solid walls
+
+`NavierStokes2DWalls` evolves vorticity on a square grid with both endpoints included. Each side is impermeable. Omitted sides are stationary no-slip walls. Use `Wall("free_slip")` for a flat stress-free wall or give a no-slip wall a constant tangential speed. Positive speeds point along increasing x on horizontal sides and increasing y on vertical sides.
+
+```python
+from src.ns2d_walls import NavierStokes2DWalls, Wall
+
+solver = NavierStokes2DWalls(N=65, L=1, nu=0.01, walls={"top": Wall("no_slip", 1.0)})
+for _ in range(250):
+    solver.step(0.004)
+u, v = solver.velocity()
+```
+
+Run the two benchmarks from the repository root:
+
+```bash
+python -m simulations.run_2d_wall_decay
+python -m simulations.run_2d_cavity
+```
+
+Each command writes a PNG and a GIF to `figures/walls/`. Use `--output-dir PATH` to choose a destination or `--no-movie` to generate only the plot.
+
+- **Free-slip decay.** Two vortices of opposite sign form an exact viscous decay mode. The benchmark compares numerical vorticity with the exact field at time 1 on 17, 33, and 65 nodes per side. [Decay and grid refinement](figures/walls/free_slip_decay.png) · [Field and exact midline animation](figures/walls/free_slip_decay.gif)
+- **Lid-driven cavity.** A unit-speed top wall drives a unit square at Reynolds number 100. The benchmark compares steady centerline velocities on 33 and 65 nodes per side with Tables I and II of Ghia, Ghia, and Shin. It also halves the fine-grid time step during startup. [Centerline profiles and steady-state check](figures/walls/cavity_profiles.png) · [Startup animation](figures/walls/cavity_startup.gif) · [Reference profiles](https://doi.org/10.1016/0021-9991%2882%2990058-4)
+
+The wall solver uses centered differences, a sine-transform Poisson solve, and explicit RK4. Each stage reconstructs vorticity on no-slip walls from the streamfunction and the wall speed (Thom's formula). The time step must resolve advection and viscous diffusion. The benchmark drivers give examples for their respective flows. The moving lid meets stationary sidewalls discontinuously. The solver sets velocity and vorticity to zero at the four corner nodes. Use interior velocity profiles to assess cavity accuracy.
+
 ### 3D simulation and energy-budget analysis
 
 The notebook does all of this, but the analysis is a regular Python function and can be used from any script:
