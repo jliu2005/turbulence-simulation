@@ -169,6 +169,16 @@ Each command writes a PNG and a GIF to `figures/walls/`. Use `--output-dir PATH`
 
 The wall solver uses centered differences, a sine-transform Poisson solve, and explicit RK4. Each stage reconstructs vorticity on no-slip walls from the streamfunction and the wall speed (Thom's formula). The time step must resolve advection and viscous diffusion. The benchmark drivers give examples for their respective flows. The moving lid meets stationary sidewalls discontinuously. The solver sets velocity and vorticity to zero at the four corner nodes. Use interior velocity profiles to assess cavity accuracy.
 
+#### Vortex pair colliding with a wall
+
+Two counter-rotating vortices travel toward the top of a unit square. The two runs start from the same compactly supported streamfunction. The top wall is stationary and switches between free slip and no slip. The other three walls use free slip in both runs.
+
+```bash
+python -m simulations.run_2d_wall_collision
+```
+
+The driver requires FFmpeg with the H.264 encoder `libx264` on your PATH. It uses 193 nodes per side and kinematic viscosity 0.001. Both panels use the same time step, output times, and signed-vorticity scale. The view shows the upper part of the box. Red and blue show opposite senses of rotation, and the color scale saturates at ±75 to make the weaker vorticity near the wall visible. To repeat the experiment on another grid, use `--nodes 129 --output-dir results/walls-129`. [Side-by-side collision movie](figures/walls/vortex_wall_collision.mp4)
+
 ### 3D simulation and energy-budget analysis
 
 The notebook does all of this, but the analysis is a regular Python function and can be used from any script:
