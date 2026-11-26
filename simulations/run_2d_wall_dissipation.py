@@ -70,6 +70,14 @@ def main():
                 f"at t={t[strip.argmax()]:.2f}, peak fraction={fraction.max():.2f}%, "
                 f"energy closure residual/K0={100 * (total_loss + energies[-1, i] - e0) / e0:.3f}%"
             )
+    # Section 6 measures closest approach of the 193² no-slip cores at t=0.59.
+    impact_time = 0.59
+    for ax in axes:
+        marker = ax.axvline(
+            impact_time, color="0.3", linestyle="--", linewidth=1,
+            label=f"No-slip closest approach (t={impact_time:.2f})", zorder=1,
+        )
+    handles.append(marker)
     for ax, title, ylabel in zip(
         axes,
         (
@@ -86,7 +94,7 @@ def main():
         ax.set(title=title, ylabel=ylabel, xlabel="Time", xlim=(0, 1.2), ylim=(0, None))
         ax.grid(alpha=0.2)
     fig.suptitle("Vortex–wall collision  |  Within L/16 of the upper wall", fontsize=15)
-    fig.legend(handles=handles, loc="lower center", ncol=4, frameon=False)
+    fig.legend(handles=handles, loc="lower center", ncol=3, frameon=False)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     fig.savefig(args.output_dir / "vortex_wall_dissipation.png", dpi=150)
     plt.close(fig)
