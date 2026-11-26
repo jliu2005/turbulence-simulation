@@ -13,3 +13,10 @@ API Documentation
    :members:
    :undoc-members:
    :show-inheritance:
+3D Navier-Stokes Solver
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: src.ns3d
+   :members:
+   :undoc-members:
+   :show-inheritance:

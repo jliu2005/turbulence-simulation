@@ -7,6 +7,7 @@ This project investigates incompressible flows using numerical simulations of th
 The repository includes:
 
 - A two-dimensional Navier-Stokes solver using the vorticity-streamfunction formulation.
+- A reusable three-dimensional Navier-Stokes solver using Fourier pseudo-spectral discretization.
 - A three-dimensional Taylor-Green vortex simulation using a pseudo-spectral method.
 - Postprocessing tools for kinetic-energy budget analysis, energy spectra, and spectral energy flux.
 - Automated testing, code quality checks, and Sphinx documentation.
@@ -52,6 +53,8 @@ The repository includes:
 | `docs/` | Sphinx documentation source files. |
 | `.github/workflows/` | Automated testing and documentation build workflows. |
 | `pyproject.toml` | Configuration for pytest and Ruff. |
+| `src/ns3d.py` | Three-dimensional incompressible Navier-Stokes solver. |
+| `tests/test_ns3d.py` | Unit tests for the 3D solver. |
 
 
 ## Environment setup
@@ -169,6 +172,34 @@ print(results["KE"][0], results["dissipation"].max())
 ```
 
 If you would rather not store the snapshots in memory, note that `velocity` is indexed along axis 0 only, so a memory-mapped or lazily generated array of the same shape also works.
+
+### Standalone 3D Navier-Stokes solver
+
+The 3D solver is available as an independent Python module.
+It uses Fourier pseudo-spectral discretization, pressure
+projection, 2/3-rule dealiasing, and Heun (RK2) time integration.
+
+```python
+from src.ns3d import NavierStokes3D
+
+solver = NavierStokes3D(N=32, nu=1 / 400)
+solver.set_taylor_green()
+
+for _ in range(100):
+    solver.step(dt=0.02)
+
+velocity = solver.velocity()
+vorticity = solver.vorticity()
+energy = solver.kinetic_energy()
+```
+
+The velocity and vorticity fields have shape `(3, N, N, N)`.
+
+The solver is independent of visualization and postprocessing,
+allowing it to be reused in other scripts and notebooks.
+
+The explicit time integration method requires a sufficiently
+small time step for numerical stability.
 
 ## Postprocessing API
 
@@ -314,6 +345,23 @@ The 2D Navier-Stokes solver is tested for:
 - Kinetic energy decay in unforced viscous flow.
 - Rejection of invalid initial-condition shapes.
 
+The 3D Navier-Stokes solver is tested for:
+
+- Accuracy of forward and inverse Fourier transforms.
+- Incompressibility after pressure projection and time integration.
+- Correct initial kinetic energy of the Taylor-Green vortex.
+- Agreement with an analytical viscous decay solution.
+- Kinetic energy decay in unforced viscous flow.
+- Rejection of invalid input parameters.
+
+The tests use small computational grids to keep the
+automated test suite computationally inexpensive.
+
+To run only the 3D solver tests:
+
+```bash
+python -m pytest tests/test_ns3d.py -v
+```
 
 ## Numerical assumptions and limitations
 
