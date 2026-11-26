@@ -171,6 +171,8 @@ The wall solver uses centered differences, a sine-transform Poisson solve, and e
 
 #### Vortex pair colliding with a wall
 
+[Open the Jupyter walkthrough](Vortex_wall_collision.ipynb) to follow the benchmarks, watch the collision, and recompute the energy-loss comparison.
+
 Two counter-rotating vortices travel toward the top of a unit square. The two runs start from the same compactly supported streamfunction. The top wall is stationary and switches between free slip and no slip. The other three walls use free slip in both runs.
 
 ```bash
