@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import cumulative_trapezoid, trapezoid
 
-from simulations.run_2d_wall_collision import sampled_runs
+from simulations.run_2d_wall_collision import closest_approach, core_paths, sampled_runs
 
 
 def dissipation_rates(density, h):
@@ -70,12 +70,17 @@ def main():
                 f"at t={t[strip.argmax()]:.2f}, peak fraction={fraction.max():.2f}%, "
                 f"energy closure residual/K0={100 * (total_loss + energies[-1, i] - e0) / e0:.3f}%"
             )
-    # Section 6 measures closest approach of the 193² no-slip cores at t=0.59.
-    impact_time = 0.59
+    path_times, xy = core_paths(193)
+    _, closest = closest_approach(xy)
+    impact_time = path_times[closest]
     for ax in axes:
         marker = ax.axvline(
-            impact_time, color="0.3", linestyle="--", linewidth=1,
-            label=f"No-slip closest approach (t={impact_time:.2f})", zorder=1,
+            impact_time,
+            color="0.3",
+            linestyle="--",
+            linewidth=1,
+            label=f"No-slip closest approach (t={impact_time:.2f})",
+            zorder=1,
         )
     handles.append(marker)
     for ax, title, ylabel in zip(

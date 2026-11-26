@@ -62,6 +62,47 @@ def sampled_runs(n):
         yield frame * interval, free, rigid
 
 
+def core_paths(n):
+    """Track positive and negative interior cores for both wall conditions."""
+    h = 1 / (n - 1)
+    xy = np.array([[[0.45, 0.52], [0.55, 0.52]]] * 2)
+    history, times = [], []
+    for t, free_case, rigid_case in sampled_runs(n):
+        for case_index, case in enumerate((free_case, rigid_case)):
+            omega = case.vorticity()
+            for core, sign in enumerate((1, -1)):
+                x, y = xy[case_index, core]
+                inside = (case.X - x) ** 2 + (case.Y - y) ** 2 <= 0.04**2
+                inside[[0, -1], :] = False
+                inside[:, [0, -1]] = False
+                i, j = np.unravel_index(
+                    np.argmax(np.where(inside, sign * omega, -np.inf)), omega.shape
+                )
+                if (
+                    sign * omega[i, j] <= 0
+                    or not inside[i - 1 : i + 2, j - 1 : j + 2].all()
+                ):
+                    raise ValueError("Core peak lost or reached the search boundary")
+                # Parabolic offsets remove most of the node-to-node stepping.
+                offsets = []
+                for a, c in (
+                    (omega[i - 1, j], omega[i + 1, j]),
+                    (omega[i, j - 1], omega[i, j + 1]),
+                ):
+                    curvature = a - 2 * omega[i, j] + c
+                    offsets.append(0.5 * (a - c) / curvature if curvature else 0.0)
+                xy[case_index, core] = (np.array([i, j]) + offsets) * h
+        times.append(t)
+        history.append(xy.copy())
+    return np.array(times), np.array(history)
+
+
+def closest_approach(xy):
+    """Return mean wall gaps by case and the closest no-slip snapshot index."""
+    distance = 1 - xy[..., 1].mean(axis=2)
+    return distance, distance[:, 1].argmin()
+
+
 def snapshots(n):
     """Yield synchronized vorticity snapshots for the movie."""
     for t, free, rigid in sampled_runs(n):
