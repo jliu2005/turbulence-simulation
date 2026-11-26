@@ -13,6 +13,13 @@ API Documentation
    :members:
    :undoc-members:
    :show-inheritance:
+
+2D wall-bounded solver
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. automodule:: src.ns2d_walls
+   :members: Wall, NavierStokes2DWalls
+
 3D Navier-Stokes Solver
 ~~~~~~~~~~~~~~~~~~~~~~~
 

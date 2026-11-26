@@ -142,6 +142,84 @@ The simulation compares velocity and vorticity fields at three different kinemat
 
 The resulting figure is saved in `results/figures/viscosity_comparison.png`.
 
+### Choosing 2D boundary conditions with `make_solver_2d`
+
+Call `make_solver_2d(N=..., L=..., nu=..., boundaries=...)` with the number of points per side, box side length, kinematic viscosity, and boundary conditions. Run either example from the repository root.
+
+**Periodic square.** Pass `"periodic"` to use the Fourier solver in both directions. Initialize vorticity on the returned grid, then advance by a time step.
+
+```python
+import numpy as np
+from src.solver2d import make_solver_2d
+
+flow = make_solver_2d(N=192, L=1.0, nu=0.001, boundaries="periodic")
+omega0 = np.sin(2 * np.pi * flow.X) * np.sin(2 * np.pi * flow.Y)
+flow.set_initial_vorticity(omega0)
+flow.step(0.0001)
+u, v = flow.velocity()
+```
+
+**Vortex–wall collision.** Pass a mapping with a `Wall` for each of the four sides. The experiment changes only the top wall and gives both runs the same initial vortex pair.
+
+```python
+from simulations.run_2d_wall_collision import initial_vorticity
+from src.solver2d import Wall, make_solver_2d
+
+params = dict(N=193, L=1.0, nu=0.001)
+walls = dict.fromkeys(("left", "right", "bottom", "top"), Wall("free_slip"))
+free = make_solver_2d(**params, boundaries=walls)
+rigid = make_solver_2d(**params, boundaries={**walls, "top": Wall("no_slip")})
+
+omega0 = initial_vorticity(free)
+free.set_initial_vorticity(omega0)
+rigid.set_initial_vorticity(omega0)
+```
+
+These examples have the same grid spacing. The periodic grid has spacing `L/N`, while the wall grid includes both endpoints and has spacing `L/(N-1)`. To reuse the initialized collision pair directly, call `matched_pair(193)` from the [collision driver](simulations/run_2d_wall_collision.py).
+
+### 2D flow with solid walls
+
+`NavierStokes2DWalls` evolves vorticity on a square grid with both endpoints included. Each side is impermeable. No-slip walls require positive viscosity. When constructing `NavierStokes2DWalls` directly, omitted sides default to stationary no-slip walls. The shared `make_solver_2d` constructor requires all four sides for a walled square. Use `Wall("free_slip")` for a flat stress-free wall or give a no-slip wall a constant tangential speed. Positive speeds point along increasing x on horizontal sides and increasing y on vertical sides.
+
+```python
+from src.ns2d_walls import NavierStokes2DWalls, Wall
+
+solver = NavierStokes2DWalls(N=65, L=1, nu=0.01, walls={"top": Wall("no_slip", 1.0)})
+for _ in range(250):
+    solver.step(0.004)
+u, v = solver.velocity()
+```
+
+Run the two benchmarks from the repository root:
+
+```bash
+python -m simulations.run_2d_wall_decay
+python -m simulations.run_2d_cavity
+```
+
+Each command writes a PNG and a GIF to `figures/walls/`. Use `--output-dir PATH` to choose a destination or `--no-movie` to generate only the plot.
+
+- **Free-slip decay.** Two vortices of opposite sign form an exact viscous decay mode. The benchmark compares numerical vorticity with the exact field at time 1 on 17, 33, and 65 nodes per side. [Decay and grid refinement](figures/walls/free_slip_decay.png) · [Field and exact midline animation](figures/walls/free_slip_decay.gif)
+- **Lid-driven cavity.** A unit-speed top wall drives a unit square at Reynolds number 100. The benchmark compares steady centerline velocities on 33 and 65 nodes per side with Tables I and II of Ghia, Ghia, and Shin. It also halves the fine-grid time step during startup. [Centerline profiles and steady-state check](figures/walls/cavity_profiles.png) · [Startup animation](figures/walls/cavity_startup.gif) · [Reference profiles](https://doi.org/10.1016/0021-9991%2882%2990058-4)
+
+The wall solver uses centered differences, a sine-transform Poisson solve, and explicit RK4. Each stage reconstructs vorticity on no-slip walls from the streamfunction and the wall speed (Thom's formula). The time step must resolve advection and viscous diffusion. The benchmark drivers give examples for their respective flows. The moving lid meets stationary sidewalls discontinuously. The solver sets velocity and vorticity to zero at the four corner nodes. Use interior velocity profiles to assess cavity accuracy.
+
+#### Vortex pair colliding with a wall
+
+[Open the Jupyter walkthrough](Vortex_wall_collision.ipynb) to follow the benchmarks, watch the collision, and recompute the energy-loss comparison.
+
+Two counter-rotating vortices travel toward the top of a unit square. The two runs start from the same compactly supported streamfunction. The top wall is stationary and switches between free slip and no slip. The other three walls use free slip in both runs.
+
+```bash
+python -m simulations.run_2d_wall_collision
+```
+
+The driver requires FFmpeg with the H.264 encoder `libx264` on your PATH. It uses 193 nodes per side and kinematic viscosity 0.001. Both panels use the same time step, output times, and signed-vorticity scale. The view shows the upper part of the box. Red and blue show opposite senses of rotation, and the color scale saturates at ±75 to make the weaker vorticity near the wall visible. To repeat the experiment on another grid, use `--nodes 129 --output-dir results/walls-129`. [Side-by-side collision movie](figures/walls/vortex_wall_collision.mp4)
+
+Run `python -m simulations.run_2d_wall_dissipation` to compare viscous energy loss on the 129² and 193² grids. The driver integrates the strain-based dissipation density over the full box and over its top sixteenth, using trapezoidal weights at both edges of the strip. Both grids sample the same physical region every 0.01 time units.
+
+On the 193² grid, the no-slip strip dissipates 17.46% of the initial kinetic energy by time 1.20, compared with 13.20% for free slip. The no-slip rate peaks earlier and higher. After about time 0.78, the free-slip strip dissipates energy faster. The 129² grid gives cumulative losses of 17.30% and 13.18%, respectively. [Near-wall dissipation comparison](figures/walls/vortex_wall_dissipation.png)
+
 ### 3D simulation and energy-budget analysis
 
 The notebook does all of this, but the analysis is a regular Python function and can be used from any script:
