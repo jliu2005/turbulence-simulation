@@ -44,7 +44,7 @@ class NavierStokes2DWalls:
     L : float
         Side length. Arrays have shape (N, N), indexed by x first, then y.
     nu : float
-        Nonnegative kinematic viscosity.
+        Kinematic viscosity. Zero is supported for all-free-slip walls.
     walls : mapping, optional
         Map 'left', 'right', 'bottom', and 'top' to :class:`Wall` objects.
         Omitted sides are stationary no-slip walls.
@@ -71,6 +71,10 @@ class NavierStokes2DWalls:
                 if not isinstance(wall, Wall):
                     raise TypeError(f"Expected a Wall for {side}")
                 sides[side] = wall
+        if nu == 0 and any(wall.kind == "no_slip" for wall in sides.values()):
+            raise ValueError(
+                "Zero viscosity requires free-slip conditions on all walls"
+            )
         self.walls = MappingProxyType(sides)
 
         self.N, self.L, self.nu = N, L, nu
@@ -185,10 +189,14 @@ class NavierStokes2DWalls:
         u, v = self.velocity()
         return float(0.5 * np.sum(self._area_weights * (u**2 + v**2)))
 
-    def dissipation(self):
-        """Area-averaged viscous dissipation 2 nu S:S from velocity gradients."""
+    def dissipation_density(self):
+        """Local viscous dissipation per unit mass, 2 nu S:S, on the full grid."""
         u, v = self.velocity()
         ux, uy = np.gradient(u, self.h, edge_order=2)
         vx, vy = np.gradient(v, self.h, edge_order=2)
         strain_squared = ux**2 + vy**2 + 0.5 * (uy + vx) ** 2
-        return float(2 * self.nu * np.sum(self._area_weights * strain_squared))
+        return 2 * self.nu * strain_squared
+
+    def dissipation(self):
+        """Area-averaged viscous dissipation per unit mass."""
+        return float(np.sum(self._area_weights * self.dissipation_density()))

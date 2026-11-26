@@ -144,7 +144,7 @@ The resulting figure is saved in `results/figures/viscosity_comparison.png`.
 
 ### 2D flow with solid walls
 
-`NavierStokes2DWalls` evolves vorticity on a square grid with both endpoints included. Each side is impermeable. Omitted sides are stationary no-slip walls. Use `Wall("free_slip")` for a flat stress-free wall or give a no-slip wall a constant tangential speed. Positive speeds point along increasing x on horizontal sides and increasing y on vertical sides.
+`NavierStokes2DWalls` evolves vorticity on a square grid with both endpoints included. Each side is impermeable. No-slip walls require positive viscosity. Omitted sides are stationary no-slip walls. Use `Wall("free_slip")` for a flat stress-free wall or give a no-slip wall a constant tangential speed. Positive speeds point along increasing x on horizontal sides and increasing y on vertical sides.
 
 ```python
 from src.ns2d_walls import NavierStokes2DWalls, Wall
@@ -178,6 +178,10 @@ python -m simulations.run_2d_wall_collision
 ```
 
 The driver requires FFmpeg with the H.264 encoder `libx264` on your PATH. It uses 193 nodes per side and kinematic viscosity 0.001. Both panels use the same time step, output times, and signed-vorticity scale. The view shows the upper part of the box. Red and blue show opposite senses of rotation, and the color scale saturates at ±75 to make the weaker vorticity near the wall visible. To repeat the experiment on another grid, use `--nodes 129 --output-dir results/walls-129`. [Side-by-side collision movie](figures/walls/vortex_wall_collision.mp4)
+
+Run `python -m simulations.run_2d_wall_dissipation` to compare viscous energy loss on the 129² and 193² grids. The driver integrates the strain-based dissipation density over the full box and over its top sixteenth, using trapezoidal weights at both edges of the strip. Both grids sample the same physical region every 0.01 time units.
+
+On the 193² grid, the no-slip strip dissipates 17.46% of the initial kinetic energy by time 1.20, compared with 13.20% for free slip. The no-slip rate peaks earlier and higher. After about time 0.78, the free-slip strip dissipates energy faster. The 129² grid gives cumulative losses of 17.30% and 13.18%, respectively. [Near-wall dissipation comparison](figures/walls/vortex_wall_dissipation.png)
 
 ### 3D simulation and energy-budget analysis
 

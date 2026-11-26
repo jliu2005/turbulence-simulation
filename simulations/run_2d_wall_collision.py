@@ -44,8 +44,8 @@ def matched_pair(n):
     return free, rigid
 
 
-def snapshots(n):
-    """Yield synchronized fields at intervals of 0.01 up to time 1.20."""
+def sampled_runs(n):
+    """Yield the two live solver states every 0.01 until time 1.20."""
     free, rigid = matched_pair(n)
     u, v = free.velocity()
     speed = np.hypot(u, v).max()
@@ -53,12 +53,18 @@ def snapshots(n):
     max_dt = min(0.45 * free.h / speed, 0.18 * free.h**2 / free.nu)
     steps = int(np.ceil(interval / max_dt))
     dt = interval / steps
-    yield 0.0, free.vorticity(), rigid.vorticity()
+    yield 0.0, free, rigid
     for frame in range(1, 121):
         for _ in range(steps):
             free.step(dt)
             rigid.step(dt)
-        yield frame * interval, free.vorticity(), rigid.vorticity()
+        yield frame * interval, free, rigid
+
+
+def snapshots(n):
+    """Yield synchronized vorticity snapshots for the movie."""
+    for t, free, rigid in sampled_runs(n):
+        yield t, free.vorticity(), rigid.vorticity()
 
 
 def save_movie(n, output):

@@ -37,3 +37,14 @@ def test_pair_reaches_top_and_separates_farther_with_free_slip():
     assert y_free > y_rigid
     np.testing.assert_array_equal(free[:, -1], 0)
     assert np.max(np.abs(rigid[:, -1])) > 1
+
+
+def test_strip_quadrature_matches_exact_integrals_on_both_grids():
+    from simulations.run_2d_wall_dissipation import dissipation_rates
+
+    for n in (129, 193):
+        x, y = np.meshgrid(np.linspace(0, 1, n), np.linspace(0, 1, n), indexing="ij")
+        # Linear in each variable: composite trapezoidal integration is exact.
+        whole, strip = dissipation_rates((1 + x) * y, 1 / (n - 1))
+        np.testing.assert_allclose(whole, 0.75)
+        np.testing.assert_allclose(strip, 0.75 * (1 - (15 / 16) ** 2))

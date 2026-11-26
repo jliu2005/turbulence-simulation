@@ -203,3 +203,30 @@ def test_steady_cavity_centerlines_against_ghia():
     # Absolute errors are in units of the lid speed. Both are <0.009 on this grid.
     assert u_error < 0.012
     assert v_error < 0.012
+
+
+@pytest.mark.parametrize("walls", [None, {**FREE_SLIP, "top": Wall("no_slip", 1.0)}])
+def test_zero_viscosity_rejects_stationary_and_moving_no_slip_walls(walls):
+    with pytest.raises(ValueError, match="free-slip"):
+        NavierStokes2DWalls(N=17, nu=0, walls=walls)
+
+
+def test_exact_decay_error_uses_elapsed_time():
+    from simulations.run_2d_wall_decay import evolve_mode
+
+    times = np.array([0, 0.125, 0.25])
+    reference = evolve_mode(17, times, 0.025)
+    shifted = evolve_mode(17, times + 3, 0.025)
+    for actual, expected in zip(shifted, reference):
+        np.testing.assert_allclose(actual, expected)
+
+
+def test_local_dissipation_matches_analytic_strain():
+    s = NavierStokes2DWalls(N=65, nu=0.01, walls=FREE_SLIP)
+    x, y = np.pi * s.X, np.pi * s.Y
+    s.set_initial_vorticity(2 * np.pi**2 * np.sin(x) * np.sin(y))
+    expected = 4 * s.nu * np.pi**4 * (np.cos(x) * np.cos(y)) ** 2
+    interior = np.s_[2:-2, 2:-2]
+    np.testing.assert_allclose(
+        s.dissipation_density()[interior], expected[interior], rtol=0.003, atol=1e-12
+    )

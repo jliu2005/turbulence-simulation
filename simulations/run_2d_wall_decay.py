@@ -27,7 +27,7 @@ def evolve_mode(n, times, nu):
 
     snapshots = np.stack(snapshots)
     amplitudes = np.sum(snapshots * initial, axis=(1, 2)) / np.sum(initial**2)
-    exact_final = np.exp(-5 * np.pi**2 * nu * times[-1]) * initial
+    exact_final = np.exp(-5 * np.pi**2 * nu * (times[-1] - times[0])) * initial
     error = np.linalg.norm(snapshots[-1] - exact_final) / np.linalg.norm(exact_final)
     return snapshots, amplitudes, error
 
