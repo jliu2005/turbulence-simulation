@@ -142,9 +142,44 @@ The simulation compares velocity and vorticity fields at three different kinemat
 
 The resulting figure is saved in `results/figures/viscosity_comparison.png`.
 
+### Choosing 2D boundary conditions with `make_solver_2d`
+
+Call `make_solver_2d(N=..., L=..., nu=..., boundaries=...)` with the number of points per side, box side length, kinematic viscosity, and boundary conditions. Run either example from the repository root.
+
+**Periodic square.** Pass `"periodic"` to use the Fourier solver in both directions. Initialize vorticity on the returned grid, then advance by a time step.
+
+```python
+import numpy as np
+from src.solver2d import make_solver_2d
+
+flow = make_solver_2d(N=192, L=1.0, nu=0.001, boundaries="periodic")
+omega0 = np.sin(2 * np.pi * flow.X) * np.sin(2 * np.pi * flow.Y)
+flow.set_initial_vorticity(omega0)
+flow.step(0.0001)
+u, v = flow.velocity()
+```
+
+**Vortex–wall collision.** Pass a mapping with a `Wall` for each of the four sides. The experiment changes only the top wall and gives both runs the same initial vortex pair.
+
+```python
+from simulations.run_2d_wall_collision import initial_vorticity
+from src.solver2d import Wall, make_solver_2d
+
+params = dict(N=193, L=1.0, nu=0.001)
+walls = dict.fromkeys(("left", "right", "bottom", "top"), Wall("free_slip"))
+free = make_solver_2d(**params, boundaries=walls)
+rigid = make_solver_2d(**params, boundaries={**walls, "top": Wall("no_slip")})
+
+omega0 = initial_vorticity(free)
+free.set_initial_vorticity(omega0)
+rigid.set_initial_vorticity(omega0)
+```
+
+These examples have the same grid spacing. The periodic grid has spacing `L/N`, while the wall grid includes both endpoints and has spacing `L/(N-1)`. To reuse the initialized collision pair directly, call `matched_pair(193)` from the [collision driver](simulations/run_2d_wall_collision.py).
+
 ### 2D flow with solid walls
 
-`NavierStokes2DWalls` evolves vorticity on a square grid with both endpoints included. Each side is impermeable. No-slip walls require positive viscosity. Omitted sides are stationary no-slip walls. Use `Wall("free_slip")` for a flat stress-free wall or give a no-slip wall a constant tangential speed. Positive speeds point along increasing x on horizontal sides and increasing y on vertical sides.
+`NavierStokes2DWalls` evolves vorticity on a square grid with both endpoints included. Each side is impermeable. No-slip walls require positive viscosity. When constructing `NavierStokes2DWalls` directly, omitted sides default to stationary no-slip walls. The shared `make_solver_2d` constructor requires all four sides for a walled square. Use `Wall("free_slip")` for a flat stress-free wall or give a no-slip wall a constant tangential speed. Positive speeds point along increasing x on horizontal sides and increasing y on vertical sides.
 
 ```python
 from src.ns2d_walls import NavierStokes2DWalls, Wall

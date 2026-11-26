@@ -9,7 +9,7 @@ import numpy as np
 from matplotlib.animation import FFMpegWriter
 from matplotlib.colors import Normalize
 
-from src.ns2d_walls import NavierStokes2DWalls, Wall
+from src.solver2d import Wall, make_solver_2d
 
 
 def initial_vorticity(solver):
@@ -36,8 +36,9 @@ def initial_vorticity(solver):
 def matched_pair(n):
     """Construct the two unit-square runs in free-slip, no-slip order."""
     walls = dict.fromkeys(("bottom", "left", "right", "top"), Wall("free_slip"))
-    free = NavierStokes2DWalls(N=n, L=1, nu=0.001, walls=walls)
-    rigid = NavierStokes2DWalls(N=n, L=1, nu=free.nu, walls={**walls, "top": Wall()})
+    params = dict(N=n, L=1, nu=0.001)
+    free = make_solver_2d(**params, boundaries=walls)
+    rigid = make_solver_2d(**params, boundaries={**walls, "top": Wall("no_slip")})
     omega = initial_vorticity(free)
     free.set_initial_vorticity(omega)
     rigid.set_initial_vorticity(omega)
